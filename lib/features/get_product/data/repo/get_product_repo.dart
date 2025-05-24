@@ -4,22 +4,24 @@ import 'package:ecommerce_shop/core/network/api_response.dart' show ApiResponse;
 class Product {
   final int id;
   final String name;
-  final String imageUrl;
+  final String image;
   final double price;
-
+  final double description;
   Product({
     required this.id,
     required this.name,
-    required this.imageUrl,
+    required this.image,
     required this.price,
+    required this.description,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
       id: json['id'],
       name: json['name'],
-      imageUrl: json['image_url'] ?? '', // تأكد من وجود المفتاح
+      image: json['image_path'] ?? '', // تأكد من وجود المفتاح
       price: double.tryParse(json['price'].toString()) ?? 0.0,
+      description: double.tryParse(json['description']) ?? 0.0,
     );
   }
 }

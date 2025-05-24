@@ -26,14 +26,12 @@ class HomeView extends StatefulWidget {
 class _HomeViewState extends State<HomeView> {
   int _currentIndex = 0;
 
-  // شاشات القائمة
   late final List<Widget> _screens;
 
   @override
   void initState() {
     super.initState();
     _screens = [
-      // شاشة Home مع BlocProvider لجلب المنتجات
       BlocProvider(
         create: (_) => GetProductsCubit(GetProductsRepo())..getProducts(),
         child: const HomeScreenBodyContent(),
@@ -169,24 +167,70 @@ class HomeScreenBodyContent extends StatelessWidget {
                 if (products.isEmpty) {
                   return const Center(child: Text("No products found"));
                 }
-                return ListView.builder(
+
+                return GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: products.length,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 16,
+                    crossAxisSpacing: 16,
+                    childAspectRatio: 0.7,
+                  ),
                   itemBuilder: (context, index) {
                     final product = products[index];
-                    return ListTile(
-                      leading:
-                          product['image_url'] != null
-                              ? Image.network(
-                                product['image_url'],
-                                width: 60,
-                                height: 60,
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black12,
+                            blurRadius: 6,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      padding: const EdgeInsets.all(8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (product.image.isNotEmpty)
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.network(
+                                product.image,
+                                height: 120,
+                                width: double.infinity,
                                 fit: BoxFit.cover,
-                              )
-                              : null,
-                      title: Text(product['name'] ?? ''),
-                      subtitle: Text('Price: \$${product['price'] ?? ''}'),
+                              ),
+                            )
+                          else
+                            Container(
+                              height: 120,
+                              color: Colors.grey[300],
+                              child: const Center(child: Text("No image")),
+                            ),
+                          const SizedBox(height: 8),
+                          Text(
+                            product.name,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+
+                          const SizedBox(height: 4),
+                          Text(
+                            '\$${product.description.toStringAsFixed(2)}',
+                            style: TextStyle(color: AppColors.loginbtn),
+                          ),
+                          Text(
+                            '\$${product.price.toStringAsFixed(2)}',
+                            style: TextStyle(color: AppColors.loginbtn),
+                          ),
+                        ],
+                      ),
                     );
                   },
                 );

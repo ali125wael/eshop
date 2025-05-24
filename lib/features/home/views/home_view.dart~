@@ -1,3 +1,4 @@
+// home_view.dart
 import 'package:ecommerce_shop/core/utils/app_assets.dart';
 import 'package:ecommerce_shop/core/utils/app_colors.dart';
 import 'package:ecommerce_shop/core/utils/app_text_styles.dart';
@@ -15,6 +16,97 @@ import 'package:ecommerce_shop/features/get_product/manager/get_product_cubit/ge
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+
+class HomeView extends StatefulWidget {
+  const HomeView({super.key});
+
+  @override
+  State<HomeView> createState() => _HomeViewState();
+}
+
+class _HomeViewState extends State<HomeView> {
+  int _currentIndex = 0;
+
+  late final List<Widget> _screens;
+
+  @override
+  void initState() {
+    super.initState();
+    _screens = [
+      BlocProvider(
+        create: (_) => GetProductsCubit(GetProductsRepo())..getProducts(),
+        child: const HomeScreenBodyContent(),
+      ),
+      const ShopingView(),
+      const ProfileView(),
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _screens[_currentIndex],
+      floatingActionButton: InkWell(
+        onTap: () {
+          MyNavigator.goTo(screen: CartView());
+        },
+        child: Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            color: AppColors.loginbtn,
+            borderRadius: BorderRadius.circular(40),
+          ),
+          child: SvgPicture.asset(
+            AppAssets.bag,
+            width: 32,
+            height: 32,
+            fit: BoxFit.scaleDown,
+          ),
+        ),
+      ),
+      bottomNavigationBar: SizedBox(
+        height: 76,
+        child: BottomNavigationBar(
+          backgroundColor: AppColors.white,
+          currentIndex: _currentIndex,
+          selectedItemColor: const Color(0xFFF83758),
+          onTap: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+          },
+          items: [
+            BottomNavigationBarItem(
+              icon: _buildSvgIcon(AppAssets.home, 0, _currentIndex),
+              label: "Home",
+            ),
+            BottomNavigationBarItem(
+              icon: _buildSvgIcon(AppAssets.cart, 1, _currentIndex),
+              label: "Items",
+            ),
+            BottomNavigationBarItem(
+              icon: _buildSvgIcon(AppAssets.profile, 2, _currentIndex),
+              label: "Profile",
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+Widget _buildSvgIcon(String assetPath, int index, int currentIndex) {
+  return SvgPicture.asset(
+    assetPath,
+    width: 24,
+    height: 24,
+    colorFilter: ColorFilter.mode(
+      currentIndex == index ? const Color(0xFFF83758) : Colors.black,
+      BlendMode.srcIn,
+    ),
+  );
+}
 
 class HomeScreenBodyContent extends StatelessWidget {
   const HomeScreenBodyContent({super.key});
@@ -49,7 +141,6 @@ class HomeScreenBodyContent extends StatelessWidget {
                 fontWeight: FontWeight.w600,
                 fontSize: 18,
                 height: 22 / 18,
-                letterSpacing: 0,
                 color: Colors.black,
               ),
               textAlign: TextAlign.center,
@@ -73,58 +164,86 @@ class HomeScreenBodyContent extends StatelessWidget {
               } else if (state is GetProductsSuccess) {
                 final products = state.products;
 
-                // طباعة لتتبع المشكلة
-                print('Products length: ${products.length}');
-                print('Products data: $products');
-
                 if (products.isEmpty) {
                   return const Center(child: Text("No products found"));
                 }
 
-                // تحقق من صحة تنسيق البيانات
-                bool hasExpectedKeys = products.every(
-                  (product) =>
-                      product.containsKey('name') &&
-                      product.containsKey('price'),
-                );
-
-                if (!hasExpectedKeys) {
-                  return Center(
-                    child: Text(
-                      "Data format error: Some products are missing expected fields.",
-                      style: const TextStyle(color: Colors.red),
-                      textAlign: TextAlign.center,
-                    ),
-                  );
-                }
-
-                return ListView.builder(
+                return GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: products.length,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 16,
+                    crossAxisSpacing: 16,
+                    childAspectRatio: 0.7,
+                  ),
                   itemBuilder: (context, index) {
                     final product = products[index];
-                    return ListTile(
-                      leading:
-                          product['image_url'] != null
-                              ? Image.network(
-                                product['image_url'],
-                                width: 60,
-                                height: 60,
-                                fit: BoxFit.cover,
+                    return InkWell(
+                      onTap: () {
+                        MyNavigator.goTo(
+                          screen: ProductDetailsView(product: product),
+                        );
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black12,
+                              blurRadius: 6,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        padding: const EdgeInsets.all(8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (product.image.isNotEmpty)
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.network(
+                                  product.image,
+                                  height: 120,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                ),
                               )
-                              : null,
-                      title: Text(product['name'] ?? ''),
-                      subtitle: Text('Price: \$${product['price'] ?? ''}'),
+                            else
+                              Container(
+                                height: 120,
+                                color: Colors.grey[300],
+                                child: const Center(child: Text("No image")),
+                              ),
+                            const SizedBox(height: 8),
+                            Text(
+                              product.name,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '\$${product.price.toStringAsFixed(2)}',
+
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                            Text(
+                              '\$${product.price.toStringAsFixed(2)}',
+                              style: TextStyle(color: AppColors.loginbtn),
+                            ),
+                          ],
+                        ),
+                      ),
                     );
                   },
-                );
-              } else if (state is GetProductsError) {
-                return Center(
-                  child: Text(
-                    "Error occurred: ${state.error}",
-                    style: const TextStyle(color: Colors.red),
-                  ),
                 );
               } else {
                 return const SizedBox();
@@ -132,6 +251,47 @@ class HomeScreenBodyContent extends StatelessWidget {
             },
           ),
         ],
+      ),
+    );
+  }
+}
+
+// صفحة تفاصيل المنتج
+class ProductDetailsView extends StatelessWidget {
+  final ProductModel product;
+
+  const ProductDetailsView({super.key, required this.product});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(product.name)),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (product.image.isNotEmpty)
+              Image.network(
+                product.image,
+                width: double.infinity,
+                height: 250,
+                fit: BoxFit.cover,
+              ),
+            const SizedBox(height: 16),
+            Text(
+              product.name,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(product.description, style: const TextStyle(fontSize: 16)),
+            const SizedBox(height: 8),
+            Text(
+              '\$${product.price.toStringAsFixed(2)}',
+              style: const TextStyle(fontSize: 18, color: Colors.green),
+            ),
+          ],
+        ),
       ),
     );
   }
